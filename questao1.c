@@ -6,15 +6,20 @@
 #include <unistd.h>
 #include <locale.h>
 
-int matrix[9][9];
-int val[9];
+#define LINHAS 9
+#define COLUNAS 9
+#define VALIDO 1
+#define INVALIDO 0
+
+int matrix[LINHAS][COLUNAS];
+int val[11];
 void *runner_linha(void *param);
 void *runner_coluna(void *param);
 
 int main(int argc, char *argv[]){
   int i, j;
   FILE *file;
-  file=fopen("./sudokus/teste.txt", "r");
+  file=fopen("../sudokus/teste.txt", "r");
 
   pthread_t tid_linha;
   pthread_t tid_coluna;
@@ -23,31 +28,38 @@ int main(int argc, char *argv[]){
   pthread_attr_t attr_coluna;
   pthread_attr_t attr_grid[9];
 
-  for(i = 0; i < 9; i++){
-    val[i] = 1;
+  // Coloca todas as posicoes do vetor de validacao como VALIDO(1)
+  for(i = 0; i < 11; i++){
+    val[i] = VALIDO;
   }
 
- for(i = 0; i < 9; i++){
-  for(j = 0; j < 9; j++){
-    if (!fscanf(file, "%d", &matrix[i][j]))
-       break;
+  // Le o arquivo e coloca o sudoku na matrix
+  for(i = 0; i < LINHAS; i++){
+    for(j = 0; j < COLUNAS; j++){
+      if (!fscanf(file, "%d", &matrix[i][j]))
+        break;
     }
   }
 
+  //Inicializa a thread de analise de linhas
   pthread_attr_init(&attr_linha);
   pthread_create(&tid_linha, &attr_linha, runner_linha, NULL);
 
+  //Inicializa a thread de analise de colunas
   pthread_attr_init(&attr_coluna);
   pthread_create(&tid_coluna, &attr_coluna, runner_coluna, NULL);
-  //
-  // for(i=0; i<9;i++){
-  //   pthread_attr_init(&attr_grid[i]);
-  //   pthread_create(&tid_grid[i], &attr_grid[i], runner_grid, NULL);
-  // }
+
+  /*
+  for(i=0; i<9;i++){
+    pthread_attr_init(&attr_grid[i]);
+    pthread_create(&tid_grid[i], &attr_grid[i], runner_grid, NULL);
+  }
+  */
 
   pthread_join(tid_linha, NULL);
   pthread_join(tid_coluna, NULL);
 
+  // Printa o vetor de validacao
   printf("\n\n\n\n");
   for(i = 0; i < 9; i++){
     printf("%d ", val[i]);
@@ -56,49 +68,57 @@ int main(int argc, char *argv[]){
 }
 
 void *runner_linha(void *param){
-  int analise[9][9], i, j;
+  int analise[LINHAS][COLUNAS], i, j;
 
-  for (i = 0; i < 9; i++){
-    for(j = 0;j < 9; j++){
-      analise[i][j] = 0;
+  // Coloca todas as posicoes do vetor de analise como INVALIDO(0)
+  for (i = 0; i < LINHAS; i++){
+    for(j = 0;j < COLUNAS; j++){
+      analise[i][j] = INVALIDO;
     }
   }
 
-  for (i = 0; i < 9; i++){
-    for(j = 0;j < 9; j++){
+  /* Confere a quantidade de vezes que cada numero de 0 a 9
+     aparece na linha */
+  for (i = 0; i < LINHAS; i++){
+    for(j = 0;j < COLUNAS; j++){
       analise[i][matrix[i][j]-1] += 1;
     }
   }
 
-  for (i = 0; i < 9; i++){
-    for(j = 0;j < 9; j++){
+  /* Se algum numero tiver quantidade diferente de 1
+     coloca INVALIDO(0) na posicao 0(linhas) vetor de validacao */
+  for (i = 0; i < LINHAS; i++){
+    for(j = 0;j < COLUNAS; j++){
       if(analise[i][j] != 1)
-      val[0]=0;
+      val[0]=INVALIDO;
     }
   }
 }
 
 void *runner_coluna(void *param){
-  int analise[9][9], i, j;
+  int analise[LINHAS][COLUNAS], i, j;
 
-  for (i = 0; i < 9; i++){
-    for(j = 0;j < 9; j++){
-      analise[i][j] = 0;
+  // Coloca todas as posicoes do vetor de analise como INVALIDO(0)
+  for (i = 0; i < LINHAS; i++){
+    for(j = 0;j < COLUNAS; j++){
+      analise[i][j] = INVALIDO;
     }
   }
 
-  for (i = 0; i < 9; i++){
-    for(j = 0;j < 9; j++){
+  /* Confere a quantidade de vezes que cada numero de 0 a 9
+     aparece na coluna */
+  for (i = 0; i < LINHAS; i++){
+    for(j = 0;j < COLUNAS; j++){
       analise[matrix[j][i]-1][i] += 1;
     }
   }
 
-  for (i = 0; i < 9; i++){
-    for(j = 0;j < 9; j++){
+  /* Se algum numero tiver quantidade diferente de 1
+     coloca INVALIDO(0) na posicao 1(colunas) vetor de validacao */
+  for (i = 0; i < LINHAS; i++){
+    for(j = 0;j < COLUNAS; j++){
       if(analise[i][j] != 1)
-      val[1]=0;
-      printf("%d ", analise[i][j]);
+      val[1]=INVALIDO;
     }
-    printf("\n");
   }
 }
