@@ -22,10 +22,21 @@ void *runner_coluna(void *param);
 void *runner_grid(void *param);
 sem_t sem;
 
+
+int validacao(){
+  for(int i = 0; i < 11; i++){
+    if(val[i] != VALIDO){
+      return INVALIDO;
+    }
+  }
+
+  return VALIDO;
+}
+
 int main(int argc, char *argv[]){
   int i, j;
   FILE *file;
-  file=fopen("./sudokus/teste.txt", "r");
+  file=fopen("./sudokus/8.txt", "r");
 
   pthread_t tid_linha;
   pthread_t tid_coluna;
@@ -65,15 +76,23 @@ int main(int argc, char *argv[]){
 
   pthread_join(tid_linha, NULL);
   pthread_join(tid_coluna, NULL);
+
   for(i=0; i<9;i++){
     pthread_join(tid_grid[i], NULL);
   }
-  // Printa o vetor de validacao
-  printf("\nVal\n");
-  for(i = 0; i < 11; i++){
-    printf("%d ", val[i]);
-  }
-  printf("\n");
+
+  if(val[0] != VALIDO)
+      printf("\nErro nas linhas!\n");
+
+  if(val[1] != VALIDO)
+    printf("\nErro nas colunas!\n");
+
+   if(validacao() == VALIDO){
+     printf("\nO Sudoku e valido!\n ");
+   }else{
+     printf("\nO Sudoku e invalido!\n ");
+   }
+
   return 0;
 }
 
@@ -128,7 +147,7 @@ void *runner_coluna(void *param){
   for (i = 0; i < LINHAS; i++){
     for(j = 0;j < COLUNAS; j++){
       if(analise[i][j] != 1)
-      val[1]=INVALIDO;
+        val[1]=INVALIDO;
     }
   }
 }
@@ -161,6 +180,10 @@ void *runner_grid(void *param){
 
    for (i = 0; i < 9; i++){
        if(analise[i] != 1)
-       val[numeroThread + 2]=INVALIDO;
+       val[numeroThread + 2] = INVALIDO;
      }
+
+    if(val[numeroThread + 2] == INVALIDO)
+      printf("\nGrid %d e invalido!\n", numeroThread + 1);
+
 }
