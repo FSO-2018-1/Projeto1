@@ -1,10 +1,6 @@
 #include<pthread.h>
 #include<stdio.h>
 #include<stdlib.h>
-#include<math.h>
-#include <time.h>
-#include <unistd.h>
-#include <locale.h>
 #include <semaphore.h>
 
 #define LINHAS 9
@@ -67,13 +63,13 @@ int main(int argc, char *argv[]){
   pthread_attr_init(&attr_coluna);
   pthread_create(&tid_coluna, &attr_coluna, runner_coluna, NULL);
 
-
+  //Inicializa as threads de analise de grid
   for(i=0; i<9;i++){
     pthread_attr_init(&attr_grid[i]);
     pthread_create(&tid_grid[i], &attr_grid[i], runner_grid, NULL);
   }
 
-
+  //Espera a finalizacao das threads
   pthread_join(tid_linha, NULL);
   pthread_join(tid_coluna, NULL);
 
@@ -81,6 +77,7 @@ int main(int argc, char *argv[]){
     pthread_join(tid_grid[i], NULL);
   }
 
+  //Analisa o vetor de validacao para ver se o sudoku e valido ou nao
   if(val[0] != VALIDO)
       printf("\nErro nas linhas!\n");
 
@@ -156,28 +153,33 @@ void *runner_grid(void *param){
   int numeroThread, lin, col, i, j;
   int analise[9];
 
+  // Numera a thread
   sem_wait(&sem);
   numeroThread = threads;
   threads += 1;
   sem_post(&sem);
 
+  // Define o valor das linhas e colunas para definir qual grid deve ser analisado
   if(numeroThread <= 2){
     lin = 0;
-    col = numeroThread * 3;
+    col = numeroThread * COLUNASGRID;
   } else if(numeroThread <=5){
     lin = 3;
-    col = (numeroThread - 3)*3;
+    col = (numeroThread - 3) * COLUNASGRID;
   } else{
     lin = 6;
-    col = (numeroThread - 6)*3;
+    col = (numeroThread - 6) * COLUNASGRID;
   }
 
-  for (i=(lin/3)*3; i<((lin/3)+1)*3; i++){
-       for (j=(col/3)*3; j<((col/3)+1)*3; j++){
+  /* Confere a quantidade de vezes que cada numero de 0 a 9
+     aparece no grid */
+  for (i=(lin/LINHASGRID)*LINHASGRID; i<((lin/LINHASGRID)+1)*LINHASGRID; i++){
+       for (j=(col/COLUNASGRID)*COLUNASGRID; j<((col/COLUNASGRID)+1)*COLUNASGRID; j++){
          analise[matrix[i][j]-1] += 1;
        }
    }
-
+   /* Se algum numero tiver quantidade diferente de 1
+      coloca INVALIDO(0) na posicao correspondente ao grid(2-10) do vetor de validacao */
    for (i = 0; i < 9; i++){
        if(analise[i] != 1)
        val[numeroThread + 2] = INVALIDO;
