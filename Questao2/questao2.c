@@ -18,10 +18,10 @@ void *runner_monitor(void *param);
 #define VAZIA 0
 #define NAOEXISTE -1
 
-int cadeiras[20], qtdCadeiras;
+int cadeiras[20], qtdCadeiras, Nalunos = 1, posicaoFila = 0;
 int estadoMonitor = DORMINDO;
 
-sem_t sem;
+sem_t sem, sem_alunos;
 
 int arredondamento(double num){
     int num_int = num;
@@ -33,7 +33,8 @@ int main(int argc, char *argv[]){
   int i, j, alunos;
   srand(time(NULL));
 
-  alunos = (rand() % 37 + 3);
+  alunos = 3;
+  // alunos = (rand() % 37 + 3);
   qtdCadeiras = arredondamento(alunos/2.0);
 
 
@@ -52,6 +53,7 @@ int main(int argc, char *argv[]){
   pthread_attr_t attr_monitor;
 
   sem_init(&sem, 0, 1);
+  sem_init(&sem_alunos, 0, 1);
 
   //Inicializa a thread do assistente
   pthread_attr_init(&attr_monitor);
@@ -72,34 +74,52 @@ int main(int argc, char *argv[]){
 }
 
 void *runner_alunos(void *param){
-  int estadoAluno = PROGRAMANDO;
-  int nAjuda, posicaoFila = 0;
+  int numeroAluno, estadoAluno = PROGRAMANDO, i;
+  int nAjuda, seg;
+
+  sem_wait(&sem_alunos);
+    numeroAluno = Nalunos;
+    Nalunos += 1;
+  sem_post(&sem_alunos);
+
+  printf("Aluno %d programando!\n", numeroAluno);
 
   while(estadoAluno != FINALIZADO){
     estadoAluno = PROGRAMANDO;
-    sleep(rand() % 11);
+    seg = rand() % 3;
+    sleep(seg);
 
     if(estadoAluno == PROGRAMANDO){
       estadoAluno = rand() % 2;
+      printf("Estado do aluno %d e: %d !\n", numeroAluno, estadoAluno);
     }
 
     if(estadoAluno == AJUDA){
       sem_wait(&sem);
-      if(estadoMonitor == DORMINDO){
+      if(estadoMonitor == DORMINDO && cadeiras[0] == VAZIA){
         estadoMonitor = AJUDA;
         nAjuda = nAjuda + 1;
         sem_post(&sem);
+        printf("Monitor está atendendo o aluno %d!\n", numeroAluno);
+        // estadoAluno = PROGRAMANDO;
+        sleep(seg);
+        // printf("Monitor esta livre!\n");
       } else if(estadoMonitor == AJUDA){
         if(cadeiras[posicaoFila] == VAZIA){
           cadeiras[posicaoFila] = OCUPADA;
           posicaoFila = posicaoFila + 1;
-          if(posicaoFila > qtdCadeiras){
+          printf("Aluno %d está sentado na posicao %d!\n", numeroAluno, posicaoFila);
+          estadoAluno = SENTADO;
+          if(qtdCadeiras <= posicaoFila ){
             posicaoFila = 0;
           }
-          estadoAluno = SENTADO;
-        } else{
+          sem_post(&sem);
+        } else {
+          sem_post(&sem);
+          printf("Aluno %d voltou a programar!\n", numeroAluno);
           estadoAluno = PROGRAMANDO;
         }
+
       }
     }
     if(nAjuda == 3){
@@ -107,10 +127,24 @@ void *runner_alunos(void *param){
     }
   }
 
+  printf("Aluno %d foi atendido 3 vezes!\n", numeroAluno);
+
 }
 
 void *runner_monitor(void *param){
+  int i, seg;
 
-
+  // for(i = 0; i < qtdCadeiras; i++){
+  //   if(cadeiras[0] == VAZIA){
+  //     cadeiras[0] = VAZIA;
+  //     printf("Cadeira %d esta liberada!\n", i);
+  //   } else if(cadeiras[i] == VAZIA){
+  //     cadeiras[i-1] = VAZIA;
+  //     printf("Cadeira %d esta liberada!\n", i-1);
+  //   } else if(cadeiras[qtdCadeiras] == OCUPADA){
+  //     cadeiras[qtdCadeiras] = VAZIA;
+  //     printf("Cadeira %d esta liberada!\n", qtdCadeiras);
+  //   }
+  // }
 
 }
