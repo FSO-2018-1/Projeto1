@@ -3,7 +3,9 @@
 #include<stdlib.h>
 #include <time.h>
 #include <semaphore.h>
- #include <unistd.h>
+#include <unistd.h>
+#include <time.h>
+#include <locale.h>
 
 
 void *runner_alunos(void *param);
@@ -22,6 +24,16 @@ int cadeiras[20], qtdCadeiras, Nalunos = 1, posicaoFila = 0;
 int estadoMonitor = DORMINDO;
 
 sem_t sem, sem_alunos;
+
+int tempo(){
+  int temp;
+  time_t t = time(NULL); // Função time que retorna o tempo exato do computador
+  struct tm tm = *localtime(&t); // *localtime == tempo local
+
+  temp = (tm.tm_hour*3600) + (tm.tm_min*60) + (tm.tm_sec); // Tempo total retornado em segundos
+
+  return temp;
+}
 
 int arredondamento(double num){
     int num_int = num;
@@ -74,7 +86,7 @@ int main(int argc, char *argv[]){
 }
 
 void *runner_alunos(void *param){
-  int numeroAluno, estadoAluno = PROGRAMANDO, i;
+  int numeroAluno, estadoAluno = PROGRAMANDO, i, horario;
   int nAjuda, seg;
 
   sem_wait(&sem_alunos);
@@ -101,11 +113,11 @@ void *runner_alunos(void *param){
         nAjuda = nAjuda + 1;
         sem_post(&sem);
         printf("Monitor está atendendo o aluno %d!\n", numeroAluno);
-        // estadoAluno = PROGRAMANDO;
-        sleep(seg);
+        estadoAluno = PROGRAMANDO;
+        horario = tempo();
         // printf("Monitor esta livre!\n");
       } else if(estadoMonitor == AJUDA){
-        if(cadeiras[posicaoFila] == VAZIA){
+        if(cadeiras[posicaoFila] == VAZIA && tempo() - horario < 10){
           cadeiras[posicaoFila] = OCUPADA;
           posicaoFila = posicaoFila + 1;
           printf("Aluno %d está sentado na posicao %d!\n", numeroAluno, posicaoFila);
@@ -114,14 +126,38 @@ void *runner_alunos(void *param){
             posicaoFila = 0;
           }
           sem_post(&sem);
-        } else {
-          sem_post(&sem);
+        } else if(cadeiras[posicaoFila] == OCUPADA && tempo() - horario < 10){
           printf("Aluno %d voltou a programar!\n", numeroAluno);
           estadoAluno = PROGRAMANDO;
+          sem_post(&sem);
         }
-
+        else if(cadeiras[posicaoFila] == OCUPADA &&  tempo() - horario > 10){
+          for(i = 0; i < qtdCadeiras; i++){
+            if(cadeiras[0] == VAZIA){
+              cadeiras[0] = VAZIA;
+              printf("Cadeira %d esta liberada!\n", i);
+            } else if(cadeiras[i] == VAZIA){
+              cadeiras[i-1] = VAZIA;
+              printf("Cadeira %d esta liberada!\n", i-1);
+              estadoAluno = AJUDA;
+              horario = tempo();
+            } else if(cadeiras[qtdCadeiras] == OCUPADA){
+              cadeiras[qtdCadeiras] = VAZIA;
+              printf("Cadeira %d esta liberada!\n", qtdCadeiras);
+              estadoAluno = AJUDA;
+              horario = tempo();
+            }
+          }
+          sem_post(&sem);
+        }
+        else if(cadeiras[posicaoFila] == VAZIA &&  tempo() - horario > 10){
+          sem_post(&sem);
+          estadoMonitor = DORMINDO;
+          printf("Monitor esta livre!\n");
+        }
       }
     }
+
     if(nAjuda == 3){
       estadoAluno = FINALIZADO;
     }
@@ -133,18 +169,5 @@ void *runner_alunos(void *param){
 
 void *runner_monitor(void *param){
   int i, seg;
-
-  // for(i = 0; i < qtdCadeiras; i++){
-  //   if(cadeiras[0] == VAZIA){
-  //     cadeiras[0] = VAZIA;
-  //     printf("Cadeira %d esta liberada!\n", i);
-  //   } else if(cadeiras[i] == VAZIA){
-  //     cadeiras[i-1] = VAZIA;
-  //     printf("Cadeira %d esta liberada!\n", i-1);
-  //   } else if(cadeiras[qtdCadeiras] == OCUPADA){
-  //     cadeiras[qtdCadeiras] = VAZIA;
-  //     printf("Cadeira %d esta liberada!\n", qtdCadeiras);
-  //   }
-  // }
 
 }
