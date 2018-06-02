@@ -35,8 +35,11 @@ int validacao(){
 
 int main(int argc, char *argv[]){
   int i, j;
+  char *sudoku;
   FILE *file;
-  file=fopen("./sudokus/8.txt", "r");
+
+  sudoku = argv[1];
+  file=fopen(sudoku, "r");
 
   pthread_t tid_linha;
   pthread_t tid_coluna;
