@@ -1,3 +1,9 @@
+/*
+Questão 1 - Trabalho 1 FSO
+Maria Luiza Ferreira - 16/0014433
+Lucas Arthur Lermen - 16/0012961
+*/
+
 #include<pthread.h>
 #include<stdio.h>
 #include<stdlib.h>
